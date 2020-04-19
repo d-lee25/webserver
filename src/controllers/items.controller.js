@@ -1,5 +1,12 @@
-const con = require('../db-config');
-const queries = require('../queries/items.queries');
+const connection = require('../db-config');
+const {
+  ALL_ITEMS,
+  SINGLE_ITEM,
+  INSERT_ITEM,
+  UPDATE_ITEM,
+  DELETE_ITEM,
+} = require('../queries/items.queries');
+const query = require('../utils/query');
 
 /**
  * CRUD - Create, Read, Update, Delete
@@ -8,43 +15,72 @@ const queries = require('../queries/items.queries');
  * PUT - Update
  * DELETE - Delete
  */
-
-exports.getAllItems = function(req, res) {
-  con.query(queries.ALL_ITEMS, function(err, result, fields) {
-    if (err) {
-      
-      res.send(err);
-    }
-    res.json(result);
+// http://localhost:3000/tasks
+exports.getAllItems = async (req, res) => {
+  // establish connection
+  const con = await connection().catch((err) => {
+    throw err;
   });
+
+  // query all tasks
+  const items = await query(con, ALL_ITEMS).catch((err) => {
+    res.send(err);
+  });
+
+  if (items.length) {
+    res.json(items);
+  }
 };
 
 // http://localhost:3000/tasks/1
-exports.getItem = function(req, res) {
-  con.query(queries.SINGLE_ITEM, [req.params.itemId], function(err, result) {
-    if (err) {
-      res.send(err);
-      
-    }
-    res.json(result);
+exports.getItem = async (req, res) => {
+  // establish connection
+  const con = await connection().catch((err) => {
+    throw err;
   });
+
+  // query all task
+  const item = await query(con, SINGLE_ITEM, [req.params.itemId]).catch(
+    (err) => {
+      res.send(err);
+    }
+  );
+
+  if (item.length) {
+    res.json(item);
+  }
 };
 
-// http://localhost:3000/tasks/1
+// http://localhost:3000/tasks
 /**
  * POST request -
  * {
  *  name: 'A task name'
  * }
  */
-exports.createItem = function(req, res) {
-  con.query(queries.INSERT_ITEM, [req.body.name], function(err, result) {
-    if (err) {
-      res.send(err);
-    }
+exports.createItem = async (req, res) => {
+  // verify valid token
+  const decoded = req.user; // {id: 1, iat: wlenfwekl, expiredIn: 9174323 }
+
+  // take result of middleware check
+  if (decoded.id) {
+    // establish connection
+    const con = await connection().catch((err) => {
+      throw err;
+    });
+
+    // query add task
+    const result = await query(con, INSERT_ITEM, [req.body.name]).catch(
+      (err) => {
+        res.send(err);
+      }
+    );
     console.log(result);
-    res.json({ message: 'Number of records inserted: ' + result.affectedRows });
-  });
+
+    if (result.affectedRows === 1) {
+      res.json({ message: 'Added Item successfully!' });
+    }
+  }
 };
 
 // http://localhost:3000/tasks/1
@@ -55,25 +91,42 @@ exports.createItem = function(req, res) {
  *  state: 'completed'
  * }
  */
-exports.updateItem = function(req, res) {
-  con.query(
-    queries.UPDATE_ITEM,
-    [req.body.name, req.body.status, req.params.itemId],
-    function(err, data) {
-      if (err) {
-        res.send(err);
-      }
-      res.json(data);
-    }
-  );
+exports.updateItem = async (req, res) => {
+  // establish connection
+  const con = await connection().catch((err) => {
+    throw err;
+  });
+
+  // query update task
+  const result = await query(con, UPDATE_ITEM, [
+    req.body.name,
+   // req.body.status, Need to update this line
+    req.params.itemId,
+  ]).catch((err) => {
+    res.send(err);
+  });
+
+  if (result.affectedRows === 1) {
+    res.json(result);
+  }
 };
 
 // http://localhost:3000/tasks/1
-exports.deleteItem = function(req, res) {
-  con.query(queries.DELETE_ITEM, [req.params.itemId], function(err) {
-    if (err) {
+exports.deleteItem = async (req, res) => {
+  // establish connection
+  const con = await connection().catch((err) => {
+    throw err;
+  });
+
+  // query delete task
+  const result = await query(con, DELETE_ITEM, [req.params.itemId]).catch(
+    (err) => {
       res.send(err);
     }
+  );
+
+  if (result.affectedRows === 1) {
     res.json({ message: 'Deleted successfully.' });
-  });
+  }
 };
+

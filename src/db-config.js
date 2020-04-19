@@ -1,7 +1,7 @@
 const mysql = require('mysql');
-const itemqueries = require('./queries/items.queries');
-const authqueries = require('./queries/auth.queries');
-const userqueries = require('./queries/user.queries');
+const { CREATE_USERS_TABLE } = require('./queries/user.queries');
+const { CREATE_ITEMS_TABLE } = require('./queries/items.queries');
+const query = require('./utils/query');
 
 // Get the Host from Environment or use default
 const host = process.env.DB_HOST || 'localhost';
@@ -15,27 +15,51 @@ const password = process.env.DB_PASS || 'password';
 // Get the Database from Environment or use default
 const database = process.env.DB_DATABASE || 'projecthunt';
 
+const connection = async () =>
+  new Promise((resolve, reject) => {
+    const con = mysql.createConnection({
+      host,
+      user,
+      password,
+      database,
+    });
+
+    con.connect((err) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+    });
+
+    resolve(con);
+  });
+
 // Create the connection with required details
-const con = mysql.createConnection({
-  host,
-  user,
-  password,
-  database
-});
+(async () => {
+  const _con = await connection().catch((err) => {
+    throw err;
+  });
 
-// Connect to the database.
-con.connect(function(err) {
-  if (err) throw err;
-  console.log('Connected!');
+  const userTableCreated = await query(_con, CREATE_USERS_TABLE).catch(
+    (err) => {
+      console.log(err);
+    }
+  );
 
-  con.query(itemqueries.CREATE_ITEMS_TABLE, function(err, result) {
-    if (err) throw err;
-    console.log('Table created or exists already!');
-});
-con.query(authqueries.CREATE_USERS_TABLE, function(err, result){
-  if(err) throw err; 
-  console.log('Table users created');
-});
-});
+  const itemsTableCreated = await query(_con, CREATE_ITEMS_TABLE).catch(
+    (err) => {
+      console.log(err);
+    }
+  );
 
-module.exports = con;
+  if (!!userTableCreated && !!itemsTableCreated) {
+    console.log('Tables Created!');
+  }
+})();
+
+module.exports = connection;
+
+
+
+
+

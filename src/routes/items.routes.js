@@ -1,24 +1,31 @@
-const controllers = require('../controllers/items.controller');
 const express = require('express');
+const {
+  getAllItems,
+  createItem,
+  getItem,
+  updateItem,
+  deleteItem,
+} = require('../controllers/items.controller');
+const canAccess = require('../middleware/auth.middleware');
 
 const itemsRoutes = express.Router();
 /**
- * Express routes for Items.
+ * Express routes for Tasks.
  *
  * RESTful endpoints make for easily adding to existing API features.
  */
 
 /**
- * Routes for all Items.
+ * Routes for all tasks. Evaluates to `/tasks/`.
  */
-itemsRoutes.get('/', controllers.getAllItems).post('/', controllers.createItem);
+itemsRoutes.get('/', canAccess, getAllItems).post('/', canAccess, createItem);
 
 /**
- * Routes for a item by id.
+ * Routes for a task by id. Evalutes to `/tasks/:taskId`.
  */
 itemsRoutes
-  .get('/:itemId', controllers.getItem) // GET http://locahost:3000/tasks/1
-  .put('/:itemId', controllers.updateItem)
-  .delete('/:itemId', controllers.deleteItem);
+  .get('/:itemId', canAccess, getItem) // GET http://locahost:3000/tasks/1
+  .put('/:itemId', canAccess, updateItem)
+  .delete('/:itemId', canAccess, deleteItem);
 
 module.exports = itemsRoutes;
